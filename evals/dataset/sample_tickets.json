@@ -1,0 +1,22 @@
+[
+  {
+    "id": "T1",
+    "text": "Search is broken, fix it"
+  },
+  {
+    "id": "T2",
+    "text": "Users want to see only active listings, not sold ones, when they search."
+  },
+  {
+    "id": "T3",
+    "text": "Add a way for sellers to mark a listing as sold so it stops showing up everywhere, but also make sure it still shows up in their own dashboard."
+  },
+  {
+    "id": "T4",
+    "text": "Make listings better"
+  },
+  {
+    "id": "T5",
+    "text": "Prevent spammy or duplicate listings from flooding search results, while also letting legitimate sellers post multiple similar items (e.g. selling the same model of phone in different colors)."
+  }
+]

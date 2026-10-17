@@ -1,4 +1,4 @@
-# Forward Deployed Engineer (Agentic Dev Workflows): Learning Guide and Resume Project Plan
+# Forward Deployed Engineer (Agentic Dev Workflows): Learning Guide and  Project Plan
 
 Prepared for: Rahul Kumar | Date: 17 Oct 2026
 Role: builds and runs agentic development pipelines (ticket to spec to code to tests to review to release) for a classifieds marketplace
@@ -180,7 +180,7 @@ agentic-ticket-to-pr/
 ### Milestones (each ends with something you can show)
 
 | #  | Milestone                                                | Deliverable                                         |
-| -- | -------------------------------------------------------- | ---------------------------------------------------- |
+| -- | -------------------------------------------------------- | --------------------------------------------------- |
 | M1 | Temporal workflow with retries and human approval signal | Working run in Temporal UI                          |
 | M2 | Spec generation with structured output                   | 20-ticket dataset, valid JSON specs                 |
 | M3 | LangFuse tracing and eval scoring                        | Eval table: 2 prompts x 2 models                    |
