@@ -3,3 +3,4 @@ requests>=2.31
 python-dotenv>=1.0
 mcp<2
 temporalio>=1.8
+langfuse>=5.0

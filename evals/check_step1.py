@@ -17,7 +17,7 @@ def main() -> int:
     passed = 0
     for ticket in tickets:
         try:
-            spec = generate_spec(ticket["text"])
+            spec = generate_spec(ticket["text"], ticket_id=ticket["id"])
             print(f"[PASS] {ticket['id']}: {ticket['text'][:60]!r}")
             print(f"       acceptance_criteria={len(spec.acceptance_criteria)} "
                   f"edge_cases={len(spec.edge_cases)} test_cases={len(spec.test_cases)}")

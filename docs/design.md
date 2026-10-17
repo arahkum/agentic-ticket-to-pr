@@ -39,3 +39,27 @@ modules at workflow-sandbox-import-time — that's why activities (which do
 the real work: calling Ollama, etc.) are separate from the workflow, and why
 `workflow.unsafe.imports_passed_through()` is used to import the activity
 *function references* (for typing) without sandboxing their internals.
+
+## Step 4: LangFuse tracing
+
+- Self-hosted via Docker Compose (`langfuse` repo cloned as a sibling
+  directory, not part of this repo) with headless initialization
+  (`LANGFUSE_INIT_*` env vars) so org/project/API keys are created on
+  container startup — no manual sign-up needed.
+- `pipeline/spec_generator.py` wraps every call in a `generate_spec` span
+  (metadata: `ticket_id`, `model`, `prompt_version`) with a nested
+  `spec_llm_call` generation observation for the actual LLM call.
+- **Caveat found while building this**: on self-hosted Langfuse v4.63.0 with
+  Python SDK v5.0.2, the dedicated `model=` kwarg on
+  `start_as_current_observation(as_type="generation", ...)` was not
+  persisted server-side (queried back as `None`). Latency *did* work
+  correctly via the observation's `latency` field. Fix: also put `model` in
+  the `metadata` dict explicitly — belt-and-suspenders, and it's what the
+  exercise actually required (ticket_id/model/prompt_version as metadata).
+- Cost: the local Ollama model (`gpt-oss:20b`) is free, so `total_cost` is
+  legitimately `None`/0 here — no `usage_details`/pricing were sent. With a
+  paid API (Step 8 routing), passing real token `usage_details` lets
+  LangFuse compute cost per call from its model price table.
+- Verify: `evals/check_step4.py` generates a couple of specs, flushes, then
+  queries `langfuse.api.observations.get_many(..., fields="core,basic,io,metadata,usage")`
+  to confirm metadata + latency are queryable, not just visible in the UI.

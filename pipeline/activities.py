@@ -44,7 +44,7 @@ async def load_ticket(ticket_id: str) -> Ticket:
 @activity.defn
 async def generate_spec_activity(ticket: Ticket) -> dict:
     try:
-        spec = _generate_spec(ticket.text)
+        spec = _generate_spec(ticket.text, ticket_id=ticket.id)
     except SpecGenerationError as exc:
         raise RuntimeError(f"spec generation failed: {exc}") from exc
     return spec.model_dump()

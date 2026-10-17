@@ -2,7 +2,7 @@
 
 Prepared for: Rahul Kumar | Date: 17 Oct 2026
 Role: builds and runs agentic development pipelines (ticket to spec to code to tests to review to release) for a classifieds marketplace
-How to use this file: do the steps in order. Each step has a "Done when" check. Do not add a tool to your resume until its step is done and the code is on GitHub.
+How to use this file: do the steps in order. Each step has a "Done when" check. Do not add a tool to your skill until its step is done and the code is on GitHub.
 
 ---
 
