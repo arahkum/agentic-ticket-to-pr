@@ -1,5 +1,25 @@
 # Design notes
 
+## Step 6: spec-driven implementation on listings-sample-app
+
+Used Copilot (agent mode) instead of the Claude Code CLI throughout this
+project (see earlier plan discussion) — for Step 6 that means I acted as the
+implementing agent directly rather than scripting `claude -p`, since that's
+the actual tool being used daily here.
+
+- Generated 3 specs via Step 1's `spec_generator` into
+  `listings-sample-app/specs/TICKET-{1,2,3}.json`.
+- Implemented each on its own branch (`feature/ticket-N-*`), with tests,
+  reviewed, and merged via real PRs on GitHub (arahkum/listings-sample-app
+  #1, #2, #3).
+- Full review write-up, including a real cross-ticket contract regression
+  TICKET-3 introduced (changing `GET /listings`'s default no-filter
+  behavior from "active only" to "no filter"), is in
+  `listings-sample-app/docs/failure-log.md`.
+- `listings-sample-app/AGENTS.md` holds the project rules (branch naming,
+  test requirements, scope discipline) — the cross-tool equivalent of
+  `CLAUDE.md` that both Claude Code and Copilot/other agents can read.
+
 ## Step 3: why Temporal, and why the workflow waits without a thread
 
 **Why Temporal instead of a plain script/cron job:**
