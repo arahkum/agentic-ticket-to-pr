@@ -98,12 +98,20 @@ def generate_spec(
             raw = chat_completion(system_prompt, ticket_text, model=model_name)
             generation.update(output=raw)
 
-        json_str = _extract_json(raw)
         try:
+            json_str = _extract_json(raw)
             data = json.loads(json_str)
             spec = TicketSpec.model_validate(data)
-        except (json.JSONDecodeError, ValidationError) as exc:
-            span.update(output={"error": str(exc)})
+        except (SpecGenerationError, json.JSONDecodeError, ValidationError) as exc:
+            # level=ERROR + blocked=True make a refused/failed generation easy
+            # to filter for in LangFuse (Step 7: guardrails should be visible,
+            # not just effective) - this covers both malformed output and a
+            # prompt-injection attempt the model correctly refused.
+            span.update(
+                output={"error": str(exc)},
+                level="ERROR",
+                metadata={"blocked": True, "ticket_id": ticket_id, "model": model_name},
+            )
             raise SpecGenerationError(f"Spec generation failed: {exc}", raw=raw) from exc
 
         span.update(output=spec.model_dump())

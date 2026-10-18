@@ -1,5 +1,47 @@
 # Design notes
 
+## Step 7: guardrails and security
+
+`guardrails/` implements the controls from the plan's Step 7 exercise:
+
+- `tool_allowlist.py`: `ALLOWED_TOOLS` set + `assert_tool_allowed`,
+  `assert_path_allowed` (blocks `.env`/secret/credential/key-like paths),
+  `assert_branch_allowed` (blocks writing to `main`/`master`) — what an MCP
+  client/orchestrator would enforce around a coding agent (ties back to
+  Step 2).
+- `clean_env.py`: `clean_env_for_agent()` strips any env var whose name ends
+  in `_KEY`/`_TOKEN`/`_SECRET`/`_PASSWORD`/`_CREDENTIALS` before handing an
+  environment to a subprocess (tests, git) the agent runs — least privilege,
+  not "trust the agent not to look."
+- `diff_limit.py`: `changed_line_count()` + `DiffTooLargeError` — caps how
+  much a single PR can change (default 300 lines).
+- `secret_scan.py`: wraps `gitleaks detect` (installed via `brew install
+  gitleaks`), raises `SecretsFoundError` with the findings.
+- `pre_pr_gate.py`: orchestrates tests -> diff-size -> secret scan, in that
+  order — this is the capstone architecture's `run_checks` activity.
+
+**Verified by deliberately breaking things** (all on a local-only throwaway
+branch, never pushed):
+- A commit with a `ghp_...`-shaped fake GitHub token in
+  `listings-sample-app` was correctly caught by `pre_pr_gate` (found in both
+  the source file *and* a stale `.pyc` in `__pycache__` — a reminder that
+  compiled artifacts can carry secrets too). Note: a canonical
+  `AKIAIOSFODNN7EXAMPLE`-style fake AWS key was **not** caught — gitleaks'
+  default ruleset allowlists well-known documentation example keys, so a
+  real secret scan needs a ruleset tuned for what your codebase actually
+  risks leaking, not just "any test key will do."
+- A real past diff run through `changed_line_count` with an artificially
+  low limit correctly raised `DiffTooLargeError`.
+
+**Prompt injection ticket blocked and visible in LangFuse** (the plan's
+specific "Done when" for this step): `pipeline/spec_generator.py`'s error
+path now sets `level="ERROR"` and `metadata={"blocked": True, ...}` on the
+span whenever generation fails — including when a model correctly refuses
+an injection attempt rather than leaking the system prompt. Verified with
+`evals/check_step7.py`: the injection ticket raises `SpecGenerationError`
+(no crash, no spec produced), and the resulting trace is confirmed via the
+LangFuse API as `level=ERROR`, `metadata.blocked=True`.
+
 ## Step 6: spec-driven implementation on listings-sample-app
 
 Used Copilot (agent mode) instead of the Claude Code CLI throughout this
