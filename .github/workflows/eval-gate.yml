@@ -1,0 +1,43 @@
+name: Eval Gate
+
+on:
+  pull_request:
+    paths:
+      - "prompts/**"
+      - "pipeline/spec_generator.py"
+      - "pipeline/llm_client.py"
+      - "evals/**"
+      - ".github/workflows/eval-gate.yml"
+
+jobs:
+  eval-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Start Ollama and pull a small CI model
+        run: |
+          ollama serve &
+          for i in $(seq 1 30); do
+            curl -s http://localhost:11434/api/tags >/dev/null && break
+            sleep 1
+          done
+          ollama pull llama3.2:1b
+
+      - name: Run regression gate (rule checks on a CI subset)
+        env:
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
+          EVAL_MODEL: llama3.2:1b
+        run: python evals/check_regression.py

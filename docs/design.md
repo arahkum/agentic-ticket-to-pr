@@ -63,3 +63,26 @@ the real work: calling Ollama, etc.) are separate from the workflow, and why
 - Verify: `evals/check_step4.py` generates a couple of specs, flushes, then
   queries `langfuse.api.observations.get_many(..., fields="core,basic,io,metadata,usage")`
   to confirm metadata + latency are queryable, not just visible in the UI.
+
+## Step 5: evals, regression tests, quality gates
+
+See `evals/rubric.md` for the full dataset composition, rubric, results
+table (2 prompts x 2 models), and the regression-gate proof. Summary:
+
+- `evals/rules.py`: deterministic rule checks (schema valid, no empty
+  strings, no duplicates; for the injection ticket, only whether the system
+  prompt leaked — refusing to produce a spec is the *correct* outcome there,
+  not a failure).
+- `evals/judge.py`: LLM-as-judge (clarity/specificity/relevance, 1-5), always
+  judged by the *other* model than the one that generated the spec.
+- `evals/run_evals.py`: compares `prompts/spec_prompt.md` (v1) vs the
+  deliberately-weakened `prompts/spec_prompt_v2.md` across `gpt-oss:20b` and
+  `llama3.2:3b`. v2 scored 0% schema-valid on both models (dropping the
+  strict-JSON/conciseness/count-minimum instructions causes truncated,
+  invalid output) — a clean, reproducible regression.
+- `evals/check_regression.py`: fast, rule-only gate (no judge call, to avoid
+  CI flakiness) — exits 1 ("red") if the average rule score drops below 0.9.
+  Verified locally: current prompt passes (1.000), v2 fails (0.200).
+- `.github/workflows/eval-gate.yml`: runs the same gate on every PR touching
+  prompts/eval/pipeline code, installing a small Ollama model in CI (no paid
+  API key needed).

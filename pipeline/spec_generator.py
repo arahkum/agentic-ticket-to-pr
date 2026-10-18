@@ -7,7 +7,6 @@ observation for the actual LLM call (so cost/latency show up per call).
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -32,22 +31,47 @@ class TicketSpec(BaseModel):
 
 
 class SpecGenerationError(RuntimeError):
-    pass
+    def __init__(self, message: str, raw: str = "") -> None:
+        super().__init__(message)
+        self.raw = raw
 
 
 def _extract_json(text: str) -> str:
-    """Strip markdown code fences if the model added them anyway."""
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        raise SpecGenerationError(f"No JSON object found in model output: {text!r}")
-    return match.group(0)
+    """Find the first balanced {...} object (brace-counting, not greedy regex
+    to the last '}' — small/weak models sometimes emit trailing junk after a
+    valid object, which a greedy match would swallow into the JSON string)."""
+    start = text.find("{")
+    if start == -1:
+        raise SpecGenerationError(f"No JSON object found in model output: {text!r}", raw=text)
+
+    depth = 0
+    for i, ch in enumerate(text[start:], start=start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+
+    raise SpecGenerationError(f"Unbalanced JSON object in model output: {text!r}", raw=text)
 
 
 def generate_spec(
-    ticket_text: str, model: str | None = None, ticket_id: str | None = None
+    ticket_text: str,
+    model: str | None = None,
+    ticket_id: str | None = None,
+    prompt_path: Path | None = None,
+    prompt_version: str | None = None,
 ) -> TicketSpec:
+    """Generate a spec for a ticket.
+
+    prompt_path/prompt_version let Step 5's eval harness compare prompt
+    versions without touching the default prompt used everywhere else.
+    """
     model_name = model or DEFAULT_MODEL
-    system_prompt = PROMPT_PATH.read_text()
+    path = prompt_path or PROMPT_PATH
+    version = prompt_version or (PROMPT_VERSION if path == PROMPT_PATH else path.stem)
+    system_prompt = path.read_text()
     langfuse = get_client()
 
     with langfuse.start_as_current_observation(
@@ -58,10 +82,10 @@ def generate_spec(
         span.update(
             metadata={
                 "ticket_id": ticket_id,
-                "prompt_version": PROMPT_VERSION,
+                "prompt_version": version,
                 "model": model_name,
             },
-            version=PROMPT_VERSION,
+            version=version,
         )
 
         with langfuse.start_as_current_observation(
@@ -80,7 +104,7 @@ def generate_spec(
             spec = TicketSpec.model_validate(data)
         except (json.JSONDecodeError, ValidationError) as exc:
             span.update(output={"error": str(exc)})
-            raise SpecGenerationError(f"Spec generation failed: {exc}\n{raw}") from exc
+            raise SpecGenerationError(f"Spec generation failed: {exc}", raw=raw) from exc
 
         span.update(output=spec.model_dump())
         return spec

@@ -40,13 +40,21 @@ def chat_completion(
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
-    try:
-        resp = requests.post(OLLAMA_URL, json=payload, timeout=120)
-    except requests.ConnectionError as exc:
-        raise LLMClientError(
-            "Could not reach Ollama at http://localhost:11434. "
-            "Start it with: ollama serve (or open the Ollama app)."
-        ) from exc
+    # a heavily CPU-contended local Ollama (multiple models/processes competing
+    # for the same cores) can occasionally stall past the read timeout - one
+    # retry avoids failing an entire eval run over a transient slow response.
+    for attempt in range(2):
+        try:
+            resp = requests.post(OLLAMA_URL, json=payload, timeout=240)
+            break
+        except requests.ConnectionError as exc:
+            raise LLMClientError(
+                "Could not reach Ollama at http://localhost:11434. "
+                "Start it with: ollama serve (or open the Ollama app)."
+            ) from exc
+        except requests.Timeout:
+            if attempt == 1:
+                raise LLMClientError("Ollama request timed out twice (240s each).")
 
     if resp.status_code != 200:
         raise LLMClientError(f"LLM call failed ({resp.status_code}): {resp.text}")
