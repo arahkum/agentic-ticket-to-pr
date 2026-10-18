@@ -10,7 +10,13 @@ from temporalio.worker import Worker
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from pipeline.activities import generate_spec_activity, load_ticket, post_result
+from pipeline.activities import (
+    generate_spec_activity,
+    load_ticket,
+    post_result,
+    run_checks_activity,
+    validate_spec_activity,
+)
 from pipeline.workflow import TicketToSpecWorkflow
 
 TASK_QUEUE = "ticket-to-pr"
@@ -22,7 +28,13 @@ async def main() -> None:
         client,
         task_queue=TASK_QUEUE,
         workflows=[TicketToSpecWorkflow],
-        activities=[load_ticket, generate_spec_activity, post_result],
+        activities=[
+            load_ticket,
+            generate_spec_activity,
+            validate_spec_activity,
+            run_checks_activity,
+            post_result,
+        ],
     )
     print(f"Worker started, polling task queue: {TASK_QUEUE}")
     await worker.run()

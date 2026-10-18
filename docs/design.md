@@ -1,5 +1,34 @@
 # Design notes
 
+## Capstone integration: one pipeline, all steps wired together
+
+`pipeline/workflow.py` now runs:
+
+```
+load_ticket -> generate_spec -> validate_spec -> WAIT approve_spec ->
+run_checks -> WAIT approve_pr -> post_result
+```
+
+- `generate_spec` / `validate_spec` route to models via Step 8's
+  `model_router` and are fully traced in LangFuse (Step 4).
+- `validate_spec` runs Step 5's rule checks + LLM judge.
+- `run_checks` runs Step 7's `guardrails.pre_pr_gate` for real, against
+  `listings-sample-app`.
+- Two human-approval signals (`approve_spec`, `approve_pr`), each backed by
+  Temporal's durable `wait_condition` (Step 3).
+
+Verified end to end with `evals/check_capstone.py` — one real run:
+`generating_spec -> validating_spec (judge_score=4.0, rule_score=1.0) ->
+waiting_for_spec_approval -> running_checks (tests passed, secret_scan
+clean, changed_lines=0) -> waiting_for_pr_approval -> posting_result`.
+
+**Honest scope note:** the "implement" step (an agent writing code from the
+approved spec) is intentionally *not* a Temporal activity — Copilot/Claude
+Code agent mode isn't an API a worker process can call. Step 6 did that
+step for real, manually, against `listings-sample-app`; `run_checks`
+validates whatever is currently in that repo, representing the gate a real
+implementation has to pass before a PR opens.
+
 ## Step 8: model selection and routing
 
 See `docs/model-routing.md` for the full table. Summary: `pipeline/model_router.py`

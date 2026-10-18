@@ -32,11 +32,11 @@ async def main() -> None:
     print(f"Started workflow: {workflow_id}")
     print(f"View it at: http://localhost:8233/namespaces/default/workflows/{workflow_id}")
 
-    # poll status until it reaches waiting_for_approval (proves retries resolved)
+    # poll status until it reaches waiting_for_spec_approval (proves retries resolved)
     while True:
         status = await handle.query(TicketToSpecWorkflow.status)
         print(f"status: {status}")
-        if status == "waiting_for_approval":
+        if status == "waiting_for_spec_approval":
             break
         await asyncio.sleep(1)
 
@@ -45,6 +45,16 @@ async def main() -> None:
 
     print("Sending approve_spec signal...")
     await handle.signal(TicketToSpecWorkflow.approve_spec)
+
+    while True:
+        status = await handle.query(TicketToSpecWorkflow.status)
+        print(f"status: {status}")
+        if status == "waiting_for_pr_approval":
+            break
+        await asyncio.sleep(1)
+
+    print("Sending approve_pr signal...")
+    await handle.signal(TicketToSpecWorkflow.approve_pr)
 
     result = await handle.result()
     print(f"Workflow result: {result}")
