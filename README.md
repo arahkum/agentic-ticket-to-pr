@@ -10,6 +10,10 @@ from.
 Target app: [`listings-sample-app`](https://github.com/arahkum/listings-sample-app),
 a small FastAPI classifieds-listings API (create, search).
 
+See [`docs/demo.md`](docs/demo.md) for the 3-minute demo walkthrough (vague
+ticket -> spec -> Temporal approval -> agent PR + LangFuse trace ->
+injection blocked -> red build from a degraded prompt + metrics table).
+
 ## Problem and goal
 
 Turning a ticket into a reviewed, tested pull request has several points
