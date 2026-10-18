@@ -1,0 +1,18 @@
+{
+  "before": {
+    "label": "before (one model for everything)",
+    "judge_model": "gpt-oss:20b",
+    "avg_judge_time_s": 4.15,
+    "total_judge_time_s": 16.59,
+    "avg_judge_score": 4.5,
+    "cost_usd": 0.0
+  },
+  "after": {
+    "label": "after (routed: cheap model judges)",
+    "judge_model": "llama3.2:3b",
+    "avg_judge_time_s": 2.22,
+    "total_judge_time_s": 8.9,
+    "avg_judge_score": 4.5,
+    "cost_usd": 0.0
+  }
+}

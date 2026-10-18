@@ -1,5 +1,15 @@
 # Design notes
 
+## Step 8: model selection and routing
+
+See `docs/model-routing.md` for the full table. Summary: `pipeline/model_router.py`
+routes `generate` (produces the spec, touches untrusted ticket text) to the
+strong model (`gpt-oss:20b`) and `validate` (judges an already-generated
+spec) to the cheap/fast model (`llama3.2:3b`). Measured with
+`evals/run_step8_routing.py`: **1.9x faster judging, 0.00 quality delta**
+(generation — and therefore the shipped spec — is unaffected, since both
+runs generate with the same model; only who judges it changes).
+
 ## Step 7: guardrails and security
 
 `guardrails/` implements the controls from the plan's Step 7 exercise:
